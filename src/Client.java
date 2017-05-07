@@ -36,8 +36,7 @@ public class Client {
             if (!recvPacket.isACK()) {
                 sendPacket.setID(recvPacket.getID());
                 sendPacket.setData(new byte[]{0}, 0, 0);
-                sendPacket.setDestinationPort(sendPacket.getSourcePort());
-                sendPacket.computeChecksum();
+                sendPacket.setDestinationPort(recvPacket.getSourcePort());
                 send(InetAddress.getByAddress(srcAddress), true);
                 break;
             }
