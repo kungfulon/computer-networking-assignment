@@ -22,8 +22,6 @@ public class DigestServer extends Server {
         int clientPort =((m_recvData[RussianPacket.OFFSET_DATA + 4] << 8 & 0xFFFF) | m_recvData[RussianPacket.OFFSET_DATA + 5] & 0xFF);
         int dataLength = m_recvPacket.getDataLength() - 6;
 
-        System.out.println(new String(m_recvData, RussianPacket.OFFSET_DATA + 6, dataLength));
-
         m_MessageDigest.reset();
         m_MessageDigest.update(m_recvData, RussianPacket.OFFSET_DATA + 6, dataLength);
         byte digest[] = m_MessageDigest.digest();
