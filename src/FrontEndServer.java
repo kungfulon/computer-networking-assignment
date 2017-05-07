@@ -1,32 +1,36 @@
+import com.savarese.rocksaw.net.RawSocket;
+
+import static com.savarese.rocksaw.net.RawSocket.PF_INET;
+
 import java.io.IOException;
 import java.net.*;
+import java.util.Arrays;
 
 public class FrontEndServer extends Server {
-    private InetSocketAddress m_MD5ServerAddress;
-    private InetSocketAddress m_SHAServerAddress;
+    private InetAddress m_MD5ServerAddress;
+    private int m_iMD5ServerPort;
+    private InetAddress m_SHAServerAddress;
+    private int m_iSHAServerPort;
 
     public FrontEndServer(int port, InetAddress md5ServerIP, int md5ServerPort, InetAddress shaServerIP, int shaServerPort) throws IOException {
-        m_Socket = new DatagramSocket(port);
-        m_MD5ServerAddress = new InetSocketAddress(md5ServerIP, md5ServerPort);
-        m_SHAServerAddress = new InetSocketAddress(shaServerIP, shaServerPort);
+        super(port);
+        m_MD5ServerAddress = md5ServerIP;
+        m_iMD5ServerPort = md5ServerPort;
+        m_SHAServerAddress = shaServerIP;
+        m_iSHAServerPort = shaServerPort;
     }
 
     public void work() throws IOException {
-        byte buffer[] = new byte[100];
-        DatagramPacket p = new DatagramPacket(buffer, 7, 93);
-        m_Socket.receive(p);
-
-        byte rawClientIP[] = p.getAddress().getAddress();
-        System.arraycopy(rawClientIP, 0, buffer, 0, 4);
-        buffer[4] = (byte)(p.getPort() >> 8);
-        buffer[5] = (byte)(p.getPort() & 0xFF);
-        buffer[6] = (byte)p.getLength();
-
-        p = new DatagramPacket(buffer, 0, 7 + p.getLength());
-
-        p.setSocketAddress(m_MD5ServerAddress);
-        m_Socket.send(p);
-        p.setSocketAddress(m_SHAServerAddress);
-        m_Socket.send(p);
+        byte[] srcAddress = new byte[4];
+        receive(srcAddress);
+        System.arraycopy(srcAddress, 0, m_sendData, RussianPacket.OFFSET_DATA, 4);
+        m_sendData[RussianPacket.OFFSET_DATA + 4] = (byte)(m_recvPacket.getSourcePort() >> 8);
+        m_sendData[RussianPacket.OFFSET_DATA + 5] = (byte)(m_recvPacket.getSourcePort() & 0xFF);
+        System.arraycopy(m_recvData, RussianPacket.OFFSET_DATA, m_sendData, RussianPacket.OFFSET_DATA + 6, m_recvPacket.getDataLength());
+        m_sendPacket.setDataLength(m_recvPacket.getDataLength() + 6);
+        m_sendPacket.setDestinationPort(m_iMD5ServerPort);
+        send(m_MD5ServerAddress, false);
+        m_sendPacket.setDestinationPort(m_iSHAServerPort);
+        send(m_SHAServerAddress, false);
     }
 }
