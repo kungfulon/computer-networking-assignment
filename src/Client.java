@@ -23,7 +23,7 @@ public class Client {
     private static void receive(byte[] srcAddress) throws IOException {
         do {
             int iLength = socket.read(recvData, srcAddress);
-            int iIPHeaderLength = recvData[0] & 0xF;
+            int iIPHeaderLength = (recvData[0] & 0xF) * 4;
 
             if (iLength < iIPHeaderLength + RussianPacket.OFFSET_DATA)
                 continue;

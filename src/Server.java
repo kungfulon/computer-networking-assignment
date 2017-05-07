@@ -38,7 +38,7 @@ public abstract class Server implements Runnable{
     protected void receive(byte[] srcAddress) throws IOException {
         do {
             int iLength = m_Socket.read(m_recvData, srcAddress);
-            int iIPHeaderLength = m_recvData[0] & 0xF;
+            int iIPHeaderLength = (m_recvData[0] & 0xF) * 4;
 
             if (iLength < iIPHeaderLength + RussianPacket.OFFSET_DATA)
                 continue;
