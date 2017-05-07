@@ -61,7 +61,7 @@ public class RussianPacket extends IPPacket {
     }
 
     public int getCheckSum() {
-        return ((Integer.parseInt(new String(_data_, OFFSET_CHECKSUM, 2), 16) << 8) | Integer.parseInt(new String(_data_, OFFSET_CHECKSUM + 2, 2), 16));
+        return ((Integer.parseInt(String.format("%c%c", _data_[OFFSET_CHECKSUM], _data_[OFFSET_CHECKSUM + 1]), 16) << 8) | Integer.parseInt(String.format("%c%c", _data_[OFFSET_CHECKSUM + 2], _data_[OFFSET_CHECKSUM + 3]), 16));
     }
 
     public int getDataLength() {
