@@ -1,14 +1,10 @@
+import com.savarese.rocksaw.net.RawSocket;
+
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
-
-import com.savarese.rocksaw.net.RawSocket;
-import com.sun.xml.internal.ws.api.message.Packet;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
 
 import static com.savarese.rocksaw.net.RawSocket.PF_INET;
 
@@ -42,11 +38,12 @@ public abstract class Server implements Runnable{
     protected void receive(byte[] srcAddress) throws IOException {
         do {
             int iLength = m_Socket.read(m_recvData, srcAddress);
+            int iIPHeaderLength = m_recvData[0] & 0xF;
 
-            if (iLength < 20 + RussianPacket.OFFSET_DATA)
+            if (iLength < iIPHeaderLength + RussianPacket.OFFSET_DATA)
                 continue;
 
-            System.arraycopy(m_recvData, 20, m_recvData, 0, iLength - 20);
+            System.arraycopy(m_recvData, iIPHeaderLength, m_recvData, 0, iLength - iIPHeaderLength);
 
             if (!m_recvPacket.verifyChecksum() || m_recvPacket.getDestinationPort() != m_iPort)
                 continue;

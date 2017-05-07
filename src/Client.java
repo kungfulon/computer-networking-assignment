@@ -1,10 +1,13 @@
 import com.savarese.rocksaw.net.RawSocket;
 
-import static com.savarese.rocksaw.net.RawSocket.PF_INET;
-
 import java.io.IOException;
-import java.net.*;
-import java.util.*;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import static com.savarese.rocksaw.net.RawSocket.PF_INET;
 
 public class Client {
     private static final int PORT = 34000;
@@ -20,11 +23,12 @@ public class Client {
     private static void receive(byte[] srcAddress) throws IOException {
         do {
             int iLength = socket.read(recvData, srcAddress);
+            int iIPHeaderLength = recvData[0] & 0xF;
 
-            if (iLength < 20 + RussianPacket.OFFSET_DATA)
+            if (iLength < iIPHeaderLength + RussianPacket.OFFSET_DATA)
                 continue;
 
-            System.arraycopy(recvData, 20, recvData, 0, iLength - 20);
+            System.arraycopy(recvData, iIPHeaderLength, recvData, 0, iLength - iIPHeaderLength);
 
             if (!recvPacket.verifyChecksum() || recvPacket.getDestinationPort() != PORT)
                 continue;

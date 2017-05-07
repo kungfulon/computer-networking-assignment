@@ -1,7 +1,7 @@
 import java.io.IOException;
-import java.net.*;
-import java.security.*;
-import java.util.Arrays;
+import java.net.InetAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class DigestServer extends Server {
     private MessageDigest m_MessageDigest;
