@@ -18,12 +18,12 @@ public class DigestServer extends Server {
         receive(srcAddress);
 
         byte rawClientIP[] = new byte[4];
-        System.arraycopy(m_recvData, RussianPacket.OFFSET_DATA, rawClientIP, 0, 4);
-        int clientPort =((m_recvData[RussianPacket.OFFSET_DATA + 4] << 8 & 0xFFFF) | m_recvData[RussianPacket.OFFSET_DATA + 5] & 0xFF);
+        System.arraycopy(m_recvData, PutinPacket.OFFSET_DATA, rawClientIP, 0, 4);
+        int clientPort =((m_recvData[PutinPacket.OFFSET_DATA + 4] << 8 & 0xFFFF) | m_recvData[PutinPacket.OFFSET_DATA + 5] & 0xFF);
         int dataLength = m_recvPacket.getDataLength() - 6;
 
         m_MessageDigest.reset();
-        m_MessageDigest.update(m_recvData, RussianPacket.OFFSET_DATA + 6, dataLength);
+        m_MessageDigest.update(m_recvData, PutinPacket.OFFSET_DATA + 6, dataLength);
         byte digest[] = m_MessageDigest.digest();
 
         byte[] data = new byte[digest.length + 1];

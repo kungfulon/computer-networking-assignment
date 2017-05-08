@@ -15,23 +15,23 @@ public abstract class Server implements Runnable{
     protected RawSocket m_Socket;
     protected int m_iPort;
     protected byte m_sendData[];
-    protected RussianPacket m_sendPacket;
+    protected PutinPacket m_sendPacket;
     protected byte m_recvData[];
-    protected RussianPacket m_recvPacket;
+    protected PutinPacket m_recvPacket;
 
     protected abstract void work() throws IOException;
 
     protected Server(int iPort) throws IOException {
         m_Socket = new RawSocket();
-        m_Socket.open(PF_INET, RussianPacket.PROTOCOL_NUMBER);
+        m_Socket.open(PF_INET, PutinPacket.PROTOCOL_NUMBER);
         m_Socket.write(InetAddress.getLocalHost(), new byte[]{(byte)0}); // workaround on windows
         m_iPort = iPort;
-        m_sendData = new byte[120 + RussianPacket.OFFSET_DATA];
-        m_sendPacket = new RussianPacket(120);
+        m_sendData = new byte[120 + PutinPacket.OFFSET_DATA];
+        m_sendPacket = new PutinPacket(120);
         m_sendPacket.setData(m_sendData);
         m_sendPacket.setSourcePort(iPort);
-        m_recvData = new byte[120 + RussianPacket.OFFSET_DATA];
-        m_recvPacket = new RussianPacket(120);
+        m_recvData = new byte[120 + PutinPacket.OFFSET_DATA];
+        m_recvPacket = new PutinPacket(120);
         m_recvPacket.setData(m_recvData);
     }
 
@@ -40,7 +40,7 @@ public abstract class Server implements Runnable{
             int iLength = m_Socket.read(m_recvData, srcAddress);
             int iIPHeaderLength = (m_recvData[0] & 0xF) * 4;
 
-            if (iLength < iIPHeaderLength + RussianPacket.OFFSET_DATA)
+            if (iLength < iIPHeaderLength + PutinPacket.OFFSET_DATA)
                 continue;
 
             System.arraycopy(m_recvData, iIPHeaderLength, m_recvData, 0, iLength - iIPHeaderLength);
@@ -68,7 +68,7 @@ public abstract class Server implements Runnable{
             m_sendPacket.computeChecksum();
             waitingForACK.add(m_sendPacket.getID());
 
-            int iLength = RussianPacket.OFFSET_DATA + m_sendPacket.getDataLength();
+            int iLength = PutinPacket.OFFSET_DATA + m_sendPacket.getDataLength();
             byte[] sendData = new byte[iLength];
             System.arraycopy(m_sendData, 0, sendData, 0, iLength);
             int id = m_sendPacket.getID();
@@ -92,7 +92,7 @@ public abstract class Server implements Runnable{
             }, 0, 10000);
         } else {
             m_sendPacket.computeChecksum();
-            m_Socket.write(destination, m_sendData, 0, RussianPacket.OFFSET_DATA + m_sendPacket.getDataLength());
+            m_Socket.write(destination, m_sendData, 0, PutinPacket.OFFSET_DATA + m_sendPacket.getDataLength());
         }
     }
 

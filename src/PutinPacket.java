@@ -10,7 +10,7 @@
 
 import org.savarese.vserv.tcpip.IPPacket;
 
-public class RussianPacket extends IPPacket {
+public class PutinPacket extends IPPacket {
     public static final int OFFSET_SOURCE_PORT = 0;
     public static final int OFFSET_DESTINATION_PORT = 2;
     public static final int OFFSET_CHECKSUM = 4;
@@ -21,7 +21,7 @@ public class RussianPacket extends IPPacket {
 
     public static final int PROTOCOL_NUMBER = 197;
 
-    public RussianPacket (int dataLength) {
+    public PutinPacket(int dataLength) {
         super(OFFSET_DATA + dataLength);
     }
 

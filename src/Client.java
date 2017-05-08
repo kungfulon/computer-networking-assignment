@@ -16,16 +16,16 @@ public class Client {
     private static ArrayList<Timer> timers = new ArrayList<>();
     private static RawSocket socket;
     private static byte sendData[];
-    private static RussianPacket sendPacket;
+    private static PutinPacket sendPacket;
     private static byte recvData[];
-    private static RussianPacket recvPacket;
+    private static PutinPacket recvPacket;
 
     private static void receive(byte[] srcAddress) throws IOException {
         do {
             int iLength = socket.read(recvData, srcAddress);
             int iIPHeaderLength = (recvData[0] & 0xF) * 4;
 
-            if (iLength < iIPHeaderLength + RussianPacket.OFFSET_DATA)
+            if (iLength < iIPHeaderLength + PutinPacket.OFFSET_DATA)
                 continue;
 
             System.arraycopy(recvData, iIPHeaderLength, recvData, 0, iLength - iIPHeaderLength);
@@ -53,7 +53,7 @@ public class Client {
             sendPacket.computeChecksum();
             waitingForACK.add(sendPacket.getID());
 
-            int iLength = RussianPacket.OFFSET_DATA + sendPacket.getDataLength();
+            int iLength = PutinPacket.OFFSET_DATA + sendPacket.getDataLength();
             byte[] _sendData = new byte[iLength];
             System.arraycopy(sendData, 0, _sendData, 0, iLength);
             int id = sendPacket.getID();
@@ -77,21 +77,21 @@ public class Client {
             timers.add(timer);
         } else {
             sendPacket.computeChecksum();
-            socket.write(destination, sendData, 0, RussianPacket.OFFSET_DATA + sendPacket.getDataLength());
+            socket.write(destination, sendData, 0, PutinPacket.OFFSET_DATA + sendPacket.getDataLength());
         }
     }
 
     public static void main(String args[]) throws IOException {
         socket = new RawSocket();
-        socket.open(PF_INET, RussianPacket.PROTOCOL_NUMBER);
+        socket.open(PF_INET, PutinPacket.PROTOCOL_NUMBER);
         socket.write(InetAddress.getLocalHost(), new byte[]{(byte)0}); // workaround on windows
-        sendData = new byte[120 + RussianPacket.OFFSET_DATA];
-        sendPacket = new RussianPacket(120);
+        sendData = new byte[120 + PutinPacket.OFFSET_DATA];
+        sendPacket = new PutinPacket(120);
         sendPacket.setData(sendData);
         sendPacket.setSourcePort(PORT);
         sendPacket.setDestinationPort(Integer.parseInt(args[1]));
-        recvData = new byte[120 + RussianPacket.OFFSET_DATA];
-        recvPacket = new RussianPacket(120);
+        recvData = new byte[120 + PutinPacket.OFFSET_DATA];
+        recvPacket = new PutinPacket(120);
         recvPacket.setData(recvData);
 
         sendPacket.setData(args[2].getBytes(), 0, args[2].getBytes().length);
@@ -104,7 +104,7 @@ public class Client {
             byte[] srcAddress = new byte[4];
             receive(srcAddress);
 
-            if (recvData[RussianPacket.OFFSET_DATA] == 'S')
+            if (recvData[PutinPacket.OFFSET_DATA] == 'S')
                 System.out.print("SHA-256: ");
             else
                 System.out.print("MD5: ");
@@ -112,7 +112,7 @@ public class Client {
             StringBuilder digest = new StringBuilder();
 
             for (int j = 1; j < recvPacket.getDataLength(); ++j)
-                digest.append(String.format("%02x", recvData[RussianPacket.OFFSET_DATA + j]));
+                digest.append(String.format("%02x", recvData[PutinPacket.OFFSET_DATA + j]));
 
             System.out.println(digest);
         }
