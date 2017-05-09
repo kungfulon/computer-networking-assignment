@@ -9,19 +9,19 @@ import java.util.TimerTask;
 import static com.savarese.rocksaw.net.RawSocket.PF_INET;
 
 public abstract class Server implements Runnable{
-    protected static int ID = 0;
-    protected static HashSet<Integer> waitingForACK = new HashSet<>();
+    private static int ID = 0;
+    private static HashSet<Integer> waitingForACK = new HashSet<>();
 
-    protected RawSocket m_Socket;
-    protected int m_iPort;
-    protected byte m_sendData[];
-    protected PutinPacket m_sendPacket;
-    protected byte m_recvData[];
-    protected PutinPacket m_recvPacket;
+    private RawSocket m_Socket;
+    private int m_iPort;
+    byte m_sendData[];
+    PutinPacket m_sendPacket;
+    byte m_recvData[];
+    PutinPacket m_recvPacket;
 
     protected abstract void work() throws IOException;
 
-    protected Server(int iPort) throws IOException {
+    Server(int iPort) throws IOException {
         m_Socket = new RawSocket();
         m_Socket.open(PF_INET, PutinPacket.PROTOCOL_NUMBER);
         m_Socket.write(InetAddress.getLocalHost(), new byte[]{(byte)0}); // workaround on windows
@@ -35,7 +35,7 @@ public abstract class Server implements Runnable{
         m_recvPacket.setData(m_recvData);
     }
 
-    protected void receive(byte[] srcAddress) throws IOException {
+    void receive(byte[] srcAddress) throws IOException {
         do {
             int iLength = m_Socket.read(m_recvData, srcAddress);
             int iIPHeaderLength = (m_recvData[0] & 0xF) * 4;
@@ -50,7 +50,7 @@ public abstract class Server implements Runnable{
 
             if (!m_recvPacket.isACK()) {
                 m_sendPacket.setID(m_recvPacket.getID());
-                m_sendPacket.setData(new byte[]{0}, 0, 0);
+                m_sendPacket.setPutinData(new byte[]{});
                 m_sendPacket.setDestinationPort(m_recvPacket.getSourcePort());
                 send(InetAddress.getByAddress(srcAddress), true);
                 break;
@@ -60,7 +60,7 @@ public abstract class Server implements Runnable{
         } while (true);
     }
 
-    protected void send(InetAddress destination, boolean isACK) throws IOException {
+    void send(InetAddress destination, boolean isACK) throws IOException {
         m_sendPacket.setIsACK(isACK);
 
         if (!isACK) {

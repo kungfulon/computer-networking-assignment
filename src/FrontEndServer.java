@@ -7,7 +7,7 @@ public class FrontEndServer extends Server {
     private InetAddress m_SHAServerAddress;
     private int m_iSHAServerPort;
 
-    public FrontEndServer(int port, InetAddress md5ServerIP, int md5ServerPort, InetAddress shaServerIP, int shaServerPort) throws IOException {
+    FrontEndServer(int port, InetAddress md5ServerIP, int md5ServerPort, InetAddress shaServerIP, int shaServerPort) throws IOException {
         super(port);
         m_MD5ServerAddress = md5ServerIP;
         m_iMD5ServerPort = md5ServerPort;

@@ -10,91 +10,99 @@
 
 import org.savarese.vserv.tcpip.IPPacket;
 
-public class PutinPacket extends IPPacket {
-    public static final int OFFSET_SOURCE_PORT = 0;
-    public static final int OFFSET_DESTINATION_PORT = 2;
-    public static final int OFFSET_CHECKSUM = 4;
-    public static final int OFFSET_DATA_LENGTH = 8;
-    public static final int OFFSET_IS_ACK = 9;
-    public static final int OFFSET_ID = 10;
-    public static final int OFFSET_DATA = 12;
+import java.util.Arrays;
 
-    public static final int PROTOCOL_NUMBER = 197;
+class PutinPacket extends IPPacket {
+    private static final int OFFSET_SOURCE_PORT = 0;
+    private static final int OFFSET_DESTINATION_PORT = 2;
+    private static final int OFFSET_CHECKSUM = 4;
+    private static final int OFFSET_DATA_LENGTH = 8;
+    private static final int OFFSET_IS_ACK = 9;
+    private static final int OFFSET_ID = 10;
+    static final int OFFSET_DATA = 12;
 
-    public PutinPacket(int dataLength) {
+    static final int PROTOCOL_NUMBER = 197;
+
+    PutinPacket(int dataLength) {
         super(OFFSET_DATA + dataLength);
     }
 
-    public void computeChecksum() {
-        _data_[OFFSET_CHECKSUM] = _data_[OFFSET_CHECKSUM + 1] = _data_[OFFSET_CHECKSUM + 2] = _data_[OFFSET_CHECKSUM + 3] = 0;
-        int checkSum = _computeChecksum_(OFFSET_SOURCE_PORT, OFFSET_CHECKSUM - OFFSET_SOURCE_PORT, OFFSET_DATA - OFFSET_SOURCE_PORT + getDataLength(), 0, false);
+    private int getNewChecksum() {
+        return _computeChecksum_(OFFSET_SOURCE_PORT,
+                OFFSET_CHECKSUM - OFFSET_SOURCE_PORT,
+                OFFSET_DATA - OFFSET_SOURCE_PORT + getDataLength(),
+                0,
+                false);
+    }
+
+    void computeChecksum() {
+        Arrays.fill(_data_, OFFSET_CHECKSUM, OFFSET_CHECKSUM + 4, (byte)0);
+
+        int checkSum = getNewChecksum();
         String cs = String.format("%02X%02X", checkSum >> 8, checkSum & 0xFF);
-        System.arraycopy(cs.getBytes(), 0, _data_, OFFSET_CHECKSUM, 4);
+        ByteUtil.setBytes(_data_, OFFSET_CHECKSUM, cs.getBytes());
     }
 
-    public boolean verifyChecksum() {
-        byte[] curChecksum = new byte[4];
-        System.arraycopy(_data_, OFFSET_CHECKSUM, curChecksum, 0, 4);
-        _data_[OFFSET_CHECKSUM] = _data_[OFFSET_CHECKSUM + 1] = _data_[OFFSET_CHECKSUM + 2] = _data_[OFFSET_CHECKSUM + 3] = 0;
-        int checkSum = _computeChecksum_(OFFSET_SOURCE_PORT, OFFSET_CHECKSUM - OFFSET_SOURCE_PORT, OFFSET_DATA - OFFSET_SOURCE_PORT + getDataLength(), 0, false);
-        System.arraycopy(curChecksum, 0, _data_, OFFSET_CHECKSUM, 4);
+    boolean verifyChecksum() {
+        String curChecksum = getCheckSum();
+        computeChecksum();
 
-        return checkSum == getCheckSum();
+        boolean ok = curChecksum.equals(getCheckSum());
+        ByteUtil.setBytes(_data_, OFFSET_CHECKSUM, curChecksum.getBytes());
+
+        return ok;
     }
 
-    public int getSourcePort() {
-        return ((_data_[OFFSET_SOURCE_PORT] << 8 & 0xFFFF) | _data_[OFFSET_SOURCE_PORT + 1] & 0xFF);
+    int getSourcePort() {
+        return ByteUtil.getUShort(_data_, OFFSET_SOURCE_PORT);
     }
 
-    public void setSourcePort(int iPort) {
-        _data_[OFFSET_SOURCE_PORT] = (byte)(iPort >> 8);
-        _data_[OFFSET_SOURCE_PORT + 1] = (byte)(iPort & 0xFF);
+    void setSourcePort(int iPort) {
+        ByteUtil.setUShort(_data_, OFFSET_SOURCE_PORT, iPort);
     }
 
-    public int getDestinationPort() {
-        return ((_data_[OFFSET_DESTINATION_PORT] << 8 & 0xFFFF) | _data_[OFFSET_DESTINATION_PORT + 1] & 0xFF);
+    int getDestinationPort() {
+        return ByteUtil.getUShort(_data_, OFFSET_DESTINATION_PORT);
     }
 
-    public void setDestinationPort(int iPort) {
-        _data_[OFFSET_DESTINATION_PORT] = (byte)(iPort >> 8);
-        _data_[OFFSET_DESTINATION_PORT + 1] = (byte)(iPort & 0xFF);
+    void setDestinationPort(int iPort) {
+        ByteUtil.setUShort(_data_, OFFSET_DESTINATION_PORT, iPort);
     }
 
-    public int getCheckSum() {
-        return ((Integer.parseInt(String.format("%c%c", _data_[OFFSET_CHECKSUM], _data_[OFFSET_CHECKSUM + 1]), 16) << 8) | Integer.parseInt(String.format("%c%c", _data_[OFFSET_CHECKSUM + 2], _data_[OFFSET_CHECKSUM + 3]), 16));
+    private String getCheckSum() {
+        return ByteUtil.getString(_data_, OFFSET_CHECKSUM, 4);
     }
 
-    public int getDataLength() {
+    int getDataLength() {
         return _data_[OFFSET_DATA_LENGTH] & 0xFF;
     }
 
-    public void setDataLength(int length) {
+    void setDataLength(int length) {
         _data_[OFFSET_DATA_LENGTH] = (byte)length;
     }
 
-    public boolean isACK() {
+    boolean isACK() {
         return _data_[OFFSET_IS_ACK] == 1;
     }
 
-    public void setIsACK(boolean isACK) {
-        _data_[OFFSET_IS_ACK] = isACK ? (byte)1 : (byte)0;
+    void setIsACK(boolean isACK) {
+        _data_[OFFSET_IS_ACK] = (byte)(isACK ? 1 : 0);
     }
 
-    public void getData(byte[] data, int offset) {
-        System.arraycopy(_data_, OFFSET_DATA, data, offset, getDataLength());
+    void setPutinData(byte[] data) {
+        _data_[OFFSET_DATA_LENGTH] = (byte)data.length;
+        ByteUtil.setBytes(_data_, OFFSET_DATA, data);
     }
 
-    public void setData(byte[] data, int offset, int length) {
-        _data_[OFFSET_DATA_LENGTH] = (byte)length;
-        System.arraycopy(data, offset, _data_, OFFSET_DATA, length);
+    byte[] getPutinData() {
+        return Arrays.copyOfRange(_data_, OFFSET_DATA, OFFSET_DATA + getDataLength());
     }
 
-    public int getID() {
-        return ((_data_[OFFSET_ID] << 8 & 0xFFFF) | _data_[OFFSET_ID + 1] & 0xFF);
+    int getID() {
+        return ByteUtil.getUShort(_data_, OFFSET_ID);
     }
 
-    public void setID(int id) {
-        _data_[OFFSET_ID] = (byte)(id >> 8);
-        _data_[OFFSET_ID + 1] = (byte)(id & 0xFF);
+    void setID(int id) {
+        ByteUtil.setUShort(_data_, OFFSET_ID, id);
     }
 }

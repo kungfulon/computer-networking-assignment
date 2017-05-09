@@ -7,7 +7,7 @@ public class DigestServer extends Server {
     private MessageDigest m_MessageDigest;
     private byte m_bAlgorithmSignature;
 
-    public DigestServer(int port, String algorithm) throws IOException, NoSuchAlgorithmException {
+    DigestServer(int port, String algorithm) throws IOException, NoSuchAlgorithmException {
         super(port);
         m_MessageDigest = MessageDigest.getInstance(algorithm);
         m_bAlgorithmSignature = (byte)algorithm.charAt(0);
@@ -30,7 +30,7 @@ public class DigestServer extends Server {
         data[0] = m_bAlgorithmSignature;
         System.arraycopy(digest, 0, data, 1, digest.length);
 
-        m_sendPacket.setData(data, 0, data.length);
+        m_sendPacket.setPutinData(data);
         m_sendPacket.setDestinationPort(clientPort);
         send(InetAddress.getByAddress(rawClientIP), false);
     }

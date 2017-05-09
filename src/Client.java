@@ -35,7 +35,7 @@ public class Client {
 
             if (!recvPacket.isACK()) {
                 sendPacket.setID(recvPacket.getID());
-                sendPacket.setData(new byte[]{0}, 0, 0);
+                sendPacket.setPutinData(new byte[]{});
                 sendPacket.setDestinationPort(recvPacket.getSourcePort());
                 send(InetAddress.getByAddress(srcAddress), true);
                 break;
@@ -94,7 +94,7 @@ public class Client {
         recvPacket = new PutinPacket(120);
         recvPacket.setData(recvData);
 
-        sendPacket.setData(args[2].getBytes(), 0, args[2].getBytes().length);
+        sendPacket.setPutinData(args[2].getBytes());
         send(InetAddress.getByName(args[0]), false);
 
         System.out.println("Response from server:");
@@ -109,11 +109,7 @@ public class Client {
             else
                 System.out.print("MD5: ");
 
-            StringBuilder digest = new StringBuilder();
-
-            for (int j = 1; j < recvPacket.getDataLength(); ++j)
-                digest.append(String.format("%02x", recvData[PutinPacket.OFFSET_DATA + j]));
-
+            String digest = ByteUtil.getHexString(recvPacket.getPutinData());
             System.out.println(digest);
         }
 
