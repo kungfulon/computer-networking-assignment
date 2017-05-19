@@ -1,52 +1,37 @@
 import java.io.IOException;
-import java.net.*;
-import java.security.*;
-import java.util.Arrays;
+import java.net.InetAddress;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class DigestServer extends Server {
     private MessageDigest m_MessageDigest;
     private byte m_bAlgorithmSignature;
 
-    public DigestServer(int port, String algorithm) throws IOException, NoSuchAlgorithmException {
-        m_Socket = new DatagramSocket(port);
+    DigestServer(int port, String algorithm) throws IOException, NoSuchAlgorithmException {
+        super(port);
         m_MessageDigest = MessageDigest.getInstance(algorithm);
         m_bAlgorithmSignature = (byte)algorithm.charAt(0);
     }
 
     public void work() throws IOException {
-        byte buffer[] = new byte[100];
-        DatagramPacket p = new DatagramPacket(buffer,100);
-        m_Socket.receive(p);
+        byte[] srcAddress = new byte[4];
+        receive(srcAddress);
 
         byte rawClientIP[] = new byte[4];
-        System.arraycopy(buffer, 0, rawClientIP, 0, 4);
-        int clientPort = 0, dataLength = buffer[6];
-
-        if (buffer[4] < 0)
-            clientPort += (256 + buffer[4]) << 8;
-        else
-            clientPort += buffer[4] << 8;
-
-        if (buffer[5] < 0)
-            clientPort += 256 + buffer[5];
-        else
-            clientPort += buffer[5];
-
-        if (dataLength < 0)
-            dataLength = 256 + dataLength;
-
-        InetSocketAddress clientAddress = new InetSocketAddress(InetAddress.getByAddress(rawClientIP), clientPort);
+        System.arraycopy(m_recvData, PutinPacket.OFFSET_DATA, rawClientIP, 0, 4);
+        int clientPort = ByteUtil.getUShort(m_recvData, PutinPacket.OFFSET_DATA + 4);
+        int dataLength = m_recvPacket.getDataLength() - 6;
 
         m_MessageDigest.reset();
-        m_MessageDigest.update(buffer, 7, dataLength);
+        m_MessageDigest.update(m_recvData, PutinPacket.OFFSET_DATA + 6, dataLength);
         byte digest[] = m_MessageDigest.digest();
 
-        buffer = new byte[digest.length + 2];
-        buffer[0] = m_bAlgorithmSignature;
-        buffer[1] = (byte)digest.length;
-        System.arraycopy(digest, 0, buffer, 2, digest.length);
+        byte[] data = new byte[digest.length + 1];
+        data[0] = m_bAlgorithmSignature;
+        System.arraycopy(digest, 0, data, 1, digest.length);
 
-        p = new DatagramPacket(buffer, 0, buffer.length, clientAddress);
-        m_Socket.send(p);
+        m_sendPacket.setPutinData(data);
+        m_sendPacket.setDestinationPort(clientPort);
+        send(InetAddress.getByAddress(rawClientIP), false);
     }
 }

@@ -1,37 +1,116 @@
-import java.net.*;
-import java.util.Arrays;
+import com.savarese.rocksaw.net.RawSocket;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.*;
+
+import static com.savarese.rocksaw.net.RawSocket.PF_INET;
 
 public class Client {
-    public static void main(String args[]) {
-        try {
-            SocketAddress serverAddress = new InetSocketAddress(args[0], Integer.parseInt(args[1]));
-            DatagramSocket socket = new DatagramSocket();
-            DatagramPacket p = new DatagramPacket(args[2].getBytes(), 0, args[2].length(), serverAddress);
-            socket.send(p);
+    private static final int PORT = (new Random()).nextInt(65535);
+    private static int ID = 0;
+    private static HashSet<Integer> waitingForACK = new HashSet<>();
+    private static ArrayList<Timer> timers = new ArrayList<>();
+    private static RawSocket socket;
+    private static byte sendData[];
+    private static PutinPacket sendPacket;
+    private static byte recvData[];
+    private static PutinPacket recvPacket;
 
-            System.out.println("Response from server:");
-            System.out.println("Hash value of \"" + args[2] + "\"");
+    private static void receive(byte[] srcAddress) throws IOException {
+        do {
+            int iLength = socket.read(recvData, srcAddress);
+            int iIPHeaderLength = (recvData[0] & 0xF) * 4;
 
-            for (int i = 0; i < 2; ++i) {
-                byte buffer[] = new byte[100];
-                p = new DatagramPacket(buffer, 0, 100);
-                socket.receive(p);
+            if (iLength < iIPHeaderLength + PutinPacket.OFFSET_DATA)
+                continue;
 
-                if (buffer[0] == 'S')
-                    System.out.print("SHA-256: ");
-                else
-                    System.out.print("MD5: ");
+            System.arraycopy(recvData, iIPHeaderLength, recvData, 0, iLength - iIPHeaderLength);
 
-                StringBuilder digest = new StringBuilder();
+            if (!recvPacket.verifyChecksum() || recvPacket.getDestinationPort() != PORT)
+                continue;
 
-                for (int j = 2; j < buffer[1]; ++j)
-                    digest.append(String.format("%02x", buffer[j]));
-
-                System.out.println(digest);
+            if (!recvPacket.isACK()) {
+                sendPacket.setID(recvPacket.getID());
+                sendPacket.setPutinData(new byte[]{});
+                sendPacket.setDestinationPort(recvPacket.getSourcePort());
+                send(InetAddress.getByAddress(srcAddress), true);
+                break;
             }
+
+            waitingForACK.remove(recvPacket.getID());
+        } while (true);
+    }
+
+    private static void send(InetAddress destination, boolean isACK) throws IOException {
+        sendPacket.setIsACK(isACK);
+
+        if (!isACK) {
+            sendPacket.setID(ID++);
+            sendPacket.computeChecksum();
+            waitingForACK.add(sendPacket.getID());
+
+            int iLength = PutinPacket.OFFSET_DATA + sendPacket.getDataLength();
+            byte[] _sendData = new byte[iLength];
+            System.arraycopy(sendData, 0, _sendData, 0, iLength);
+            int id = sendPacket.getID();
+
+            Timer timer = new Timer();
+            timer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (!waitingForACK.contains(id)) {
+                        timer.cancel();
+                        return;
+                    }
+
+                    try {
+                        socket.write(destination, _sendData, 0, iLength);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, 0, 10000);
+            timers.add(timer);
+        } else {
+            sendPacket.computeChecksum();
+            socket.write(destination, sendData, 0, PutinPacket.OFFSET_DATA + sendPacket.getDataLength());
         }
-        catch (Exception e) {
-            e.printStackTrace();
+    }
+
+    public static void main(String args[]) throws IOException {
+        socket = new RawSocket();
+        socket.open(PF_INET, PutinPacket.PROTOCOL_NUMBER);
+        socket.write(InetAddress.getLocalHost(), new byte[]{(byte)0}); // workaround on windows
+        sendData = new byte[120 + PutinPacket.OFFSET_DATA];
+        sendPacket = new PutinPacket(120);
+        sendPacket.setData(sendData);
+        sendPacket.setSourcePort(PORT);
+        sendPacket.setDestinationPort(Integer.parseInt(args[1]));
+        recvData = new byte[120 + PutinPacket.OFFSET_DATA];
+        recvPacket = new PutinPacket(120);
+        recvPacket.setData(recvData);
+
+        sendPacket.setPutinData(args[2].getBytes());
+        send(InetAddress.getByName(args[0]), false);
+
+        System.out.println("Response from server:");
+        System.out.println("Hash value of \"" + args[2] + "\"");
+
+        for (int i = 0; i < 2; ++i) {
+            byte[] srcAddress = new byte[4];
+            receive(srcAddress);
+
+            if (recvData[PutinPacket.OFFSET_DATA] == 'S')
+                System.out.print("SHA-256: ");
+            else
+                System.out.print("MD5: ");
+
+            String digest = ByteUtil.getHexString(recvPacket.getPutinData(), 1);
+            System.out.println(digest);
+        }
+
+        for (Timer timer:timers) {
+            timer.cancel();
         }
     }
 }

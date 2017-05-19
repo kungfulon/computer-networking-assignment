@@ -1,0 +1,16 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="Client">
+    <output-path>$PROJECT_DIR$/out/artifacts/</output-path>
+    <root id="root">
+      <element id="archive" name="client.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/manifest/Client/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="computer-networking-assignment" />
+      </element>
+      <element id="file-copy" path="$PROJECT_DIR$/lib/vserv-tcpip-0.9.2.jar" />
+      <element id="file-copy" path="$PROJECT_DIR$/lib/rocksaw-1.1.0.jar" />
+      <element id="file-copy" path="$PROJECT_DIR$/lib/rocksaw.dll" />
+    </root>
+  </artifact>
+</component>
