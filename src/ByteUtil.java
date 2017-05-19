@@ -15,9 +15,10 @@ class ByteUtil
         return sb.toString();
     }
 
-    static String getHexString(byte[] bytes) {
+    static String getHexString(byte[] bytes, int startIndex) {
         StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) sb.append(String.format("%02x", b));
+        for (int i = startIndex; i < bytes.length; ++i)
+            sb.append(String.format("%02x", bytes[i]));
         return sb.toString();
     }
 

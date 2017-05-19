@@ -19,8 +19,7 @@ public class FrontEndServer extends Server {
         byte[] srcAddress = new byte[4];
         receive(srcAddress);
         System.arraycopy(srcAddress, 0, m_sendData, PutinPacket.OFFSET_DATA, 4);
-        m_sendData[PutinPacket.OFFSET_DATA + 4] = (byte)(m_recvPacket.getSourcePort() >> 8);
-        m_sendData[PutinPacket.OFFSET_DATA + 5] = (byte)(m_recvPacket.getSourcePort() & 0xFF);
+        ByteUtil.setUShort(m_sendData, PutinPacket.OFFSET_DATA + 4, m_recvPacket.getSourcePort());
         System.arraycopy(m_recvData, PutinPacket.OFFSET_DATA, m_sendData, PutinPacket.OFFSET_DATA + 6, m_recvPacket.getDataLength());
         m_sendPacket.setDataLength(m_recvPacket.getDataLength() + 6);
         m_sendPacket.setDestinationPort(m_iMD5ServerPort);

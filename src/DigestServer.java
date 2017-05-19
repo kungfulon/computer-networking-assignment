@@ -19,7 +19,7 @@ public class DigestServer extends Server {
 
         byte rawClientIP[] = new byte[4];
         System.arraycopy(m_recvData, PutinPacket.OFFSET_DATA, rawClientIP, 0, 4);
-        int clientPort =((m_recvData[PutinPacket.OFFSET_DATA + 4] << 8 & 0xFFFF) | m_recvData[PutinPacket.OFFSET_DATA + 5] & 0xFF);
+        int clientPort = ByteUtil.getUShort(m_recvData, PutinPacket.OFFSET_DATA + 4);
         int dataLength = m_recvPacket.getDataLength() - 6;
 
         m_MessageDigest.reset();

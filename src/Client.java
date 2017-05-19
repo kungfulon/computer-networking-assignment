@@ -109,7 +109,7 @@ public class Client {
             else
                 System.out.print("MD5: ");
 
-            String digest = ByteUtil.getHexString(recvPacket.getPutinData());
+            String digest = ByteUtil.getHexString(recvPacket.getPutinData(), 1);
             System.out.println(digest);
         }
 
