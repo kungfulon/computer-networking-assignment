@@ -1,16 +1,12 @@
 import com.savarese.rocksaw.net.RawSocket;
-
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 import static com.savarese.rocksaw.net.RawSocket.PF_INET;
 
 public class Client {
-    private static final int PORT = 34000;
+    private static final int PORT = (new Random()).nextInt(65535);
     private static int ID = 0;
     private static HashSet<Integer> waitingForACK = new HashSet<>();
     private static ArrayList<Timer> timers = new ArrayList<>();
